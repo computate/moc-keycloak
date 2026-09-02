@@ -35,3 +35,11 @@ tofu apply -var first_broker_login_flow='first broker login'
 ```
 
 This will allow opentofu to successfully create the realm.
+
+## CI apply via GitHub Actions OIDC
+
+The apply workflow (`.github/workflows/apply.yaml`) applies this
+configuration on pushes to `main`. It authenticates to Keycloak using GitHub
+Actions' OIDC identity (using [federated client authentication]).
+
+[federated client authentication]: https://www.keycloak.org/2026/01/federated-client-authentication

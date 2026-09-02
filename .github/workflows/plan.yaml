@@ -1,0 +1,41 @@
+name: Tofu plan
+on:
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  plan:
+    # This workflow cannot run on pull requests from forked repositories
+    # (because we do not want to grant access to secret credentials to
+    # third-party code).
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+
+      - name: TF init
+        run: tofu init
+
+      - name: TF validate
+        run: tofu validate
+
+      - name: TF plan
+        run: tofu plan -out tfplan
