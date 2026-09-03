@@ -20,6 +20,17 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - name: Setup OpenTofu
+        uses: opentofu/setup-opentofu@v2
+        with:
+          tofu_wrapper: false
+
+      - name: TF init
+        run: tofu init
+
+      - name: TF validate
+        run: tofu validate
+
       - name: Authenticate to AWS
         uses: aws-actions/configure-aws-credentials@v5
         with:
@@ -38,17 +49,6 @@ jobs:
           fi
           printf '%s' "$value" > "$RUNNER_TEMP/kc_assertion.jwt"
           echo "TF_VAR_KEYCLOAK_JWT_TOKEN_FILE=$RUNNER_TEMP/kc_assertion.jwt" >> "$GITHUB_ENV"
-
-      - name: Setup OpenTofu
-        uses: opentofu/setup-opentofu@v2
-        with:
-          tofu_wrapper: false
-
-      - name: TF init
-        run: tofu init
-
-      - name: TF validate
-        run: tofu validate
 
       - name: TF plan
         run: tofu plan -out tfplan
