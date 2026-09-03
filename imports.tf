@@ -1,4 +1,3 @@
-=======
 # ------------------------------------------------------------------------------
 # Import blocks for the existing "CILogon First Broker Login" flow in realm moc.
 #
@@ -152,4 +151,21 @@ import {
 import {
   to = keycloak_authentication_execution.add_organization_member
   id = "moc/CILogon First Broker Login First Broker Login - Conditional Organization/a7d84965-fd61-4aff-9be2-c9df35ef32dd"
+}
+
+# Groups
+
+import {
+  to = keycloak_group.this["coldfront-admins"]
+  id = "moc/53ff526d-184a-4397-8005-8c86ce17ee4d"
+}
+
+import {
+  to = keycloak_group.this["open-accelerator-admins"]
+  id = "moc/f12a32d2-f272-41eb-84ad-cca20df6c9b8"
+}
+
+import {
+  to = keycloak_group.this["pi"]
+  id = "moc/12379def-5ca1-43e6-90b1-a95970aa4ab2"
 }
