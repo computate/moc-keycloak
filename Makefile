@@ -34,6 +34,11 @@ init-remote:
 setup:
 	docker compose up -d
 
+wait:
+	@echo "Waiting for keycloak..."; \
+		until curl -o /dev/null -sf http://localhost:9000/health; do sleep 1; done; \
+		echo "Keycloak is ready."
+
 teardown:
 	docker compose down -v
 	rm -f terraform.tfstate*
