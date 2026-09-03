@@ -1,0 +1,31 @@
+name: Mint Keycloak client assertion
+description: >-
+  Mint a short-lived GitHub OIDC token for federated client authentication to
+  Keycloak and export TF_VAR_KEYCLOAK_JWT_TOKEN_FILE for subsequent tofu steps.
+  Call this immediately before each tofu invocation that talks to Keycloak:
+  Keycloak enforces single-use on client assertions (a reused `jti` is rejected
+  with "Token reuse detected"), so plan and apply each need their own freshly
+  minted token.
+inputs:
+  audience:
+    description: Audience for the minted token (the Keycloak realm URL).
+    required: false
+    default: https://sso.massopen.cloud/realms/master
+runs:
+  using: composite
+  steps:
+    - name: Mint Keycloak client assertion from GitHub OIDC
+      shell: bash
+      env:
+        AUDIENCE: ${{ inputs.audience }}
+      run: |
+        set -euo pipefail
+        value=$(curl -sf \
+          -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+          "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${AUDIENCE}" | jq -r '.value')
+        if [ -z "$value" ] || [ "$value" = "null" ]; then
+          echo "failed to obtain GitHub OIDC token" >&2
+          exit 1
+        fi
+        printf '%s' "$value" > "$RUNNER_TEMP/kc_assertion.jwt"
+        echo "TF_VAR_KEYCLOAK_JWT_TOKEN_FILE=$RUNNER_TEMP/kc_assertion.jwt" >> "$GITHUB_ENV"

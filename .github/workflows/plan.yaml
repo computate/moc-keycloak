@@ -15,7 +15,7 @@ jobs:
     # This workflow cannot run on pull requests from forked repositories
     # (because we do not want to grant access to secret credentials to
     # third-party code).
-    if: github.event.pull_request.head.repo.full_name == github.repository and github.ref == 'refs/heads/main'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.base_ref == 'main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -25,30 +25,20 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: TF init
-        run: tofu init
-
-      - name: TF validate
-        run: tofu validate
-
       - name: Authenticate to AWS
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Mint Keycloak client assertion from GitHub OIDC
-        run: |
-          audience="https://sso.massopen.cloud/realms/master"
-          value=$(curl -sf \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${audience}" | jq -r '.value')
-          if [ -z "$value" ] || [ "$value" = "null" ]; then
-            echo "failed to obtain GitHub OIDC token" >&2
-            exit 1
-          fi
-          printf '%s' "$value" > "$RUNNER_TEMP/kc_assertion.jwt"
-          echo "TF_VAR_KEYCLOAK_JWT_TOKEN_FILE=$RUNNER_TEMP/kc_assertion.jwt" >> "$GITHUB_ENV"
+      - name: TF init
+        run: tofu init
+
+      - name: TF validate
+        run: tofu validate
+
+      - name: Mint Keycloak client assertion for plan
+        uses: ./.github/actions/mint-kc-assertion
 
       - name: TF plan
         run: tofu plan

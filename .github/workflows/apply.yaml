@@ -25,33 +25,28 @@ jobs:
         with:
           tofu_wrapper: false
 
-      - name: TF init
-        run: tofu init
-
-      - name: TF validate
-        run: tofu validate
-
       - name: Authenticate to AWS
         uses: aws-actions/configure-aws-credentials@v5
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: us-east-1
 
-      - name: Mint Keycloak client assertion from GitHub OIDC
-        run: |
-          audience="https://sso.massopen.cloud/realms/master"
-          value=$(curl -sf \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${audience}" | jq -r '.value')
-          if [ -z "$value" ] || [ "$value" = "null" ]; then
-            echo "failed to obtain GitHub OIDC token" >&2
-            exit 1
-          fi
-          printf '%s' "$value" > "$RUNNER_TEMP/kc_assertion.jwt"
-          echo "TF_VAR_KEYCLOAK_JWT_TOKEN_FILE=$RUNNER_TEMP/kc_assertion.jwt" >> "$GITHUB_ENV"
+      - name: TF init
+        run: tofu init
+
+      - name: TF validate
+        run: tofu validate
+
+      # Keycloak enforces single-use on client assertions, so plan and apply
+      # each need a freshly minted token (a reused jti is rejected).
+      - name: Mint Keycloak client assertion for plan
+        uses: ./.github/actions/mint-kc-assertion
 
       - name: TF plan
         run: tofu plan -out tfplan
+
+      - name: Mint Keycloak client assertion for apply
+        uses: ./.github/actions/mint-kc-assertion
 
       - name: TF apply
         run: tofu apply -concise -auto-approve tfplan
